@@ -1081,6 +1081,7 @@ const Session = {
 
     globalPubSub.broadcast("navigation", {
       type: "insert_mode_changed",
+      focusableId: this.focusedId,
       enabled: insertModeEnabled,
     });
   },

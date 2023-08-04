@@ -3,7 +3,7 @@ defmodule LivebookWeb.Output.ControlComponent do
 
   @impl true
   def mount(socket) do
-    {:ok, assign(socket, keyboard_enabled: false)}
+    {:ok, socket}
   end
 
   @impl true
@@ -13,18 +13,18 @@ defmodule LivebookWeb.Output.ControlComponent do
       class="flex"
       id={"#{@id}-root"}
       phx-hook="KeyboardControl"
-      data-keydown-enabled={to_string(@keyboard_enabled and :keydown in @attrs.events)}
-      data-keyup-enabled={to_string(@keyboard_enabled and :keyup in @attrs.events)}
+      data-cell-id={@cell_id}
+      data-disable-default-handlers={to_string(Map.get(@attrs, :disable_default_handlers, true))}
+      data-enable-on-cell-focus={to_string(Map.get(@attrs, :enable_on_cell_focus, false))}
+      data-keydown-enabled={to_string(:keydown in @attrs.events)}
+      data-keyup-enabled={to_string(:keyup in @attrs.events)}
       data-target={@myself}
     >
       <span class="tooltip right" data-tooltip="Toggle keyboard control">
         <button
-          class={
-            "button-base #{if @keyboard_enabled, do: "button-blue", else: "button-gray"} button-square-icon"
-          }
+          class="button-base button-gray button-square-icon"
           type="button"
           aria-label="toggle keyboard control"
-          phx-click={JS.push("toggle_keyboard", target: @myself)}
         >
           <.remix_icon icon="keyboard-line" />
         </button>
@@ -71,22 +71,13 @@ defmodule LivebookWeb.Output.ControlComponent do
   end
 
   @impl true
-  def handle_event("toggle_keyboard", %{}, socket) do
-    socket = update(socket, :keyboard_enabled, &not/1)
-    maybe_report_status(socket)
+  def handle_event("enable_keyboard", %{}, socket) do
+    maybe_report_status(socket, true)
     {:noreply, socket}
   end
 
   def handle_event("disable_keyboard", %{}, socket) do
-    socket =
-      if socket.assigns.keyboard_enabled do
-        socket = assign(socket, keyboard_enabled: false)
-        maybe_report_status(socket)
-        socket
-      else
-        socket
-      end
-
+    maybe_report_status(socket, false)
     {:noreply, socket}
   end
 
@@ -105,9 +96,9 @@ defmodule LivebookWeb.Output.ControlComponent do
     {:noreply, socket}
   end
 
-  defp maybe_report_status(socket) do
+  defp maybe_report_status(socket, status) do
     if :status in socket.assigns.attrs.events do
-      report_event(socket, %{type: :status, enabled: socket.assigns.keyboard_enabled})
+      report_event(socket, %{type: :status, enabled: status})
     end
   end
 
